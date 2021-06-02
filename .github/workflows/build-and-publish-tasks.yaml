@@ -1,0 +1,115 @@
+name: Build and Publish
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '*.*'
+
+concurrency: build
+
+jobs:
+  build:
+    env:
+      ECR_REGISTRY_NAME: '730861930009.dkr.ecr.us-west-2.amazonaws.com/dynamodb-streams-lambda-tasks'
+      IMAGE_TAG: ${{ github.sha }}
+    runs-on: ubuntu-18.04
+    # name: 'Build and Publish Docker Image'
+    if: "! contains(toJSON(github.event.commits.*.message), 'chore: build') && (contains( github.event.pull_request.labels.*.name, 'Requires-Docker-CI-Build' ) || github.ref == 'refs/heads/main')"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.ENDPOINT_ENG_GITHUB_TOKEN }}
+
+      # Configure git state
+      - name: Prepare repository
+        run: |
+          git config user.email "admin@endpointclosing.com"
+          git config user.name "Endpoint Admin"
+      - name: Setup Private NPM Modules Token
+        run: npm config set '//registry.npmjs.org/:_authToken' '${NPM_TOKEN}'
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - uses: actions/cache@v2
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-cache-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-cache
+      - name: Install Node Modules
+        run: yarn install --frozen-lockfile
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        with:
+          registries: 730861930009
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Docker Test Build
+        # Run Docker Build without version automation for test builds
+        if: github.ref != 'refs/heads/main'
+        run: |
+          yarn build:release
+          docker push $ECR_REGISTRY_NAME:$IMAGE_TAG
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Docker Final Build and Tag Image as latest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          yarn ep-build
+          docker push $ECR_REGISTRY_NAME:$IMAGE_TAG
+          docker tag $ECR_REGISTRY_NAME:$IMAGE_TAG $ECR_REGISTRY_NAME:latest
+          docker push $ECR_REGISTRY_NAME:latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.ENDPOINT_ENG_GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Logout of Amazon ECR
+        if: always()
+        run: docker logout $ECR_REGISTRY_NAME
+
+  integration_deploy:
+    runs-on: ubuntu-18.04
+    name: 'Integration Deploy'
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Codefresh pipeline runner
+        uses: codefresh-io/codefresh-pipeline-runner@v7
+        with:
+          args: '-v BUILD_TAG=${{ github.sha }}'
+        env:
+          PIPELINE_NAME: 'user-service/integration'
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+        id: codefresh
+
+  trigger_service_client_package_update:
+    runs-on: ubuntu-18.04
+    name: Trigger Service Client Package Update
+    needs: integration_deploy
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger workflow dispatch in package repo
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Generate Automated Packages
+          repo: endpointclosing/endpoint-eng
+          token: ${{ secrets.ENDPOINT_ENG_GITHUB_TOKEN }}

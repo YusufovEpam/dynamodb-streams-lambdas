@@ -1,0 +1,32 @@
+{
+  "name": "transactions-validator-lambda",
+  "version": "1.45.0",
+  "description": "Lambda function to process events in the Transactions stream",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "copyLib": "npm install",
+    "lint": "eslint \"{src,test}/**/*.{ts,js}\"",
+    "lint:fix": "eslint \"{src,test}/**/*.{ts,js}\" --fix",
+    "hackPackage": "rm -v ../lambda.zip || rm -rfv ./node_modules/ && npm i --only=production && npm run copyLib && zip -r ../lambda.zip .",
+    "hackDeploy": "aws lambda update-function-code --function-name test-fn-transactions-validator --zip-file fileb://../lambda.zip",
+    "build:docker-image": "docker build -t $ECR_REGISTRY_NAME:$IMAGE_TAG --build-arg NPM_TOKEN=$NPM_TOKEN ."
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@endpoint/dynamodb-streams-event-service-enqueuer": "^0.3.0",
+    "aws-sdk": "^2.900.0"
+  },
+  "devDependencies": {
+    "@endpoint/eslint-config": "^2.24.0",
+    "@endpoint/prettier-config": "^1.22.1",
+    "@types/jest": "^26.0.23",
+    "eslint-plugin-prettier": "^3.4.0",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.5",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  },
+  "prettier": "@endpoint/prettier-config"
+}

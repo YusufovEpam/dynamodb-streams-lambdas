@@ -1,0 +1,23 @@
+{
+	"npmClient": "yarn",
+	"packages": [
+		"*/fn"
+	],
+	"version": "independent",
+	"useWorkspaces": true,
+	"command": {
+		"publish": {
+			"ignoreChanges": [
+				".github/**/*",
+				"scripts/**/*",
+				"**/*.md"
+			]
+		},
+		"version": {
+			"message": "chore(release): publish packages",
+			"conventionalCommits": true,
+			"changelogPreset": "@endpoint/conventional-changelog-endpoint",
+			"createRelease": "github"
+		}
+	}
+}

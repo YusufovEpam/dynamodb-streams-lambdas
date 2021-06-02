@@ -1,0 +1,30 @@
+{
+  "name": "dynamodb-streams-lambdas",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "lerna run test",
+    "diff": "lerna diff",
+    "install": "lerna run copyLib",
+    "lint": "lerna run lint",
+    "lint:fix": "lerna run lint:fix"
+  },
+  "workspaces": [
+    "*/fn"
+  ],
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YusufovEpam/dynamodb-streams-lambdas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YusufovEpam/dynamodb-streams-lambdas/issues"
+  },
+  "homepage": "https://github.com/YusufovEpam/dynamodb-streams-lambdas#readme",
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  }
+}
