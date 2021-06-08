@@ -11,6 +11,4 @@ RUN yarn
 
 RUN yarn run build
 
-COPY ./dist
-
-CMD ["index.lambdaHandler"]
+CMD ["./dist/index.lambdaHandler"]

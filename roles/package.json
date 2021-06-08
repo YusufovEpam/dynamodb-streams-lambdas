@@ -1,17 +1,18 @@
 {
-  "name": "transaction-documents-validator-lambda",
-  "version": "1.44.2",
-  "description": "Lambda function to process events in the TransactionDocuments stream",
-  "main": "index.js",
-  "license": "UNLICENSED",
+  "name": "roles-validator-lambda",
+  "version": "1.42.0",
+  "description": "Lambda function to process events in the Roles DynamoDB Stream",
+  "main": "dist/index.js",
+  "license": "ISC",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
-    "copyLib": "npm install",
+    "copyLib": "yarn install",
     "lint": "eslint \"{src,test}/**/*.{ts,js}\"",
     "lint:fix": "eslint \"{src,test}/**/*.{ts,js}\" --fix",
     "hackPackage": "rm -v ../lambda.zip || rm -rfv ./node_modules/ && npm i --only=production && npm run copyLib && zip -r ../lambda.zip .",
     "hackDeploy": "aws lambda update-function-code --function-name test-fn-transactions-validator --zip-file fileb://../lambda.zip",
+    "build:release": "yarn build:docker-image",
     "build:docker-image": "docker build -t $ECR_REGISTRY_NAME:$IMAGE_TAG --build-arg NPM_TOKEN=$NPM_TOKEN ."
   },
   "dependencies": {

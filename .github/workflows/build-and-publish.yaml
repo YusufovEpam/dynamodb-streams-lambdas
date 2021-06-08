@@ -12,9 +12,6 @@ concurrency: build
 
 jobs:
   build:
-    env:
-      ECR_REGISTRY_NAME: '730861930009.dkr.ecr.us-west-2.amazonaws.com/dynamodb-streams-lambda-transaction-documents'
-      IMAGE_TAG: ${{ github.sha }}
     runs-on: ubuntu-18.04
     # name: 'Build and Publish Docker Image'
     if: "! contains(toJSON(github.event.commits.*.message), 'chore: build') && (contains( github.event.pull_request.labels.*.name, 'Requires-Docker-CI-Build' ) || github.ref == 'refs/heads/main')"
@@ -70,18 +67,22 @@ jobs:
           docker push $ECR_REGISTRY_NAME:$IMAGE_TAG
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Docker Final Build and Tag Image as latest
-        if: github.ref == 'refs/heads/main'
-        run: |
-          yarn ep-build
+          
+      - name: Build all packages
+        if: github.ref != 'refs/heads/main'
+        run: | 
+          yarn lerna run build:release
           docker push $ECR_REGISTRY_NAME:$IMAGE_TAG
-          docker tag $ECR_REGISTRY_NAME:$IMAGE_TAG $ECR_REGISTRY_NAME:latest
-          docker push $ECR_REGISTRY_NAME:latest
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Publish new version of changed packages
+        run: yarn lerna publish --yes --no-push --no-verify-access
         env:
           GITHUB_TOKEN: ${{ secrets.ENDPOINT_ENG_GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+          GH_TOKEN: ${{ secrets.ENDPOINT_ENG_GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}   
+          
       - name: Logout of Amazon ECR
         if: always()
         run: docker logout $ECR_REGISTRY_NAME

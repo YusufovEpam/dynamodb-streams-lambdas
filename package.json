@@ -10,7 +10,7 @@
     "lint:fix": "lerna run lint:fix"
   },
   "workspaces": [
-    "*/fn"
+    "*/"
   ],
   "private": true,
   "repository": {
@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/YusufovEpam/dynamodb-streams-lambdas#readme",
   "devDependencies": {
+    "@endpoint/release-utils": "^1.21.4",
     "lerna": "^4.0.0"
   }
 }
